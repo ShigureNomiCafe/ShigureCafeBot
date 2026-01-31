@@ -134,8 +134,8 @@ if __name__ == '__main__':
         
     builder = ApplicationBuilder().token(TOKEN)
     if PROXY_URL:
-        builder.proxy_url(PROXY_URL)
-        builder.get_updates_proxy_url(PROXY_URL)
+        builder.proxy(PROXY_URL)
+        builder.get_updates_proxy(PROXY_URL)
         print(f"Telegram Bot is using proxy: {PROXY_URL}")
         
     application = builder.build()
