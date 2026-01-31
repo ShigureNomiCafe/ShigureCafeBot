@@ -12,9 +12,12 @@ from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, Messa
 load_dotenv()
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-BACKEND_API_URL = os.getenv("BACKEND_API_URL", "http://localhost:8080/api/v1")
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8080")
 CAFE_API_KEY = os.getenv("CAFE_API_KEY")
 AUDIT_GROUP_ID = os.getenv("AUDIT_GROUP_ID")
+
+# Backend API Base URL
+API_BASE_URL = f"{BACKEND_URL.rstrip('/')}/api/v1"
 
 # Logging
 logging.basicConfig(
@@ -29,8 +32,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /start command."""
     await update.message.reply_text(
         "你好！欢迎来到 Shigure Cafe 审核机器人。\n"
-        "请发送你的审核码（Audit Code）来获取审核群邀请链接。\n"
-        "审核码在你注册成功后会显示在网页上。"
+        "请使用命令 `/audit <审核码>` 来获取审核群邀请链接。\n"
+        "例如：`/audit 12345678-1234-1234-1234-1234567890ab`\n"
+        "审核码在你注册成功后会显示在网页上。",
+        parse_mode='Markdown'
     )
 
 async def get_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -39,19 +44,22 @@ async def get_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_type = update.effective_chat.type
     await update.message.reply_text(f"当前群组/聊天的 ID 是: `{chat_id}`\n类型: {chat_type}", parse_mode='Markdown')
 
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle private messages."""
-    if not update.message or not update.message.text:
+async def audit(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /audit command."""
+    if update.effective_chat.type != 'private':
+        await update.message.reply_text("为了保护隐私，请在与机器人的私聊中使用 `/audit` 命令。", parse_mode='Markdown')
         return
 
-    text = update.message.text.strip()
+    if not context.args:
+        await update.message.reply_text("使用方法：`/audit <审核码>`", parse_mode='Markdown')
+        return
+
+    audit_code = context.args[0].strip().lower()
     
     # Check if it looks like an audit code
-    if not UUID_PATTERN.match(text):
+    if not UUID_PATTERN.match(audit_code):
         await update.message.reply_text("请输入有效的审核码（格式如：xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx）。")
         return
-
-    audit_code = text.lower()
     
     try:
         # Query backend with API Key
@@ -60,7 +68,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             headers["Cafe-API-Key"] = CAFE_API_KEY
             
         response = requests.get(
-            f"{BACKEND_API_URL}/registrations/{audit_code}", 
+            f"{API_BASE_URL}/registrations/{audit_code}", 
             headers=headers,
             timeout=10
         )
@@ -127,11 +135,11 @@ if __name__ == '__main__':
     
     start_handler = CommandHandler('start', start)
     chatid_handler = CommandHandler('chatid', get_chat_id)
-    msg_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), handle_message)
+    audit_handler = CommandHandler('audit', audit)
     
     application.add_handler(start_handler)
     application.add_handler(chatid_handler)
-    application.add_handler(msg_handler)
+    application.add_handler(audit_handler)
     
     print("ShigureCafeBot is running...")
     application.run_polling()

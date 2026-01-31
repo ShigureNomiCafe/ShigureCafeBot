@@ -1,0 +1,16 @@
+services:
+  cafe_bot:
+    build:
+      context: .
+    restart: unless-stopped
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - BACKEND_URL=${BACKEND_URL:-http://cafe_backend:8080}
+      - CAFE_API_KEY=${CAFE_API_KEY}
+      - AUDIT_GROUP_ID=${AUDIT_GROUP_ID}
+    networks:
+      - cafe-net
+
+networks:
+  cafe-net:
+    external: true
