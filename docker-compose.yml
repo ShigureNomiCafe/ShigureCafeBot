@@ -10,10 +10,10 @@ services:
       - AUDIT_GROUP_ID=${AUDIT_GROUP_ID}
       - PROXY_URL=${PROXY_URL:-http://cafe_mihomo:7890}
     depends_on:
-      - cafe_mihomo
+      cafe_mihomo:
+        condition: service_healthy
     networks:
       - cafe-net
 
 networks:
   cafe-net:
-    driver: bridge
