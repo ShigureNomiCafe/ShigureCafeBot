@@ -35,5 +35,6 @@ A Telegram bot for ShigureCafe user audit workflow.
 ## Configuration
 
 - `TELEGRAM_BOT_TOKEN`: Your bot token from @BotFather.
-- `BACKEND_API_URL`: URL to your ShigureCafeBackend API (e.g., `http://localhost:8080/api/v1`).
+- `BACKEND_URL`: URL to your ShigureCafeBackend (e.g., `http://localhost:8080`).
+- `CAFE_API_KEY`: API Key for ShigureCafeBackend.
 - `AUDIT_GROUP_ID`: The Telegram Chat ID of your audit group. The bot must be an administrator in this group with "Invite Users via Link" permission.
