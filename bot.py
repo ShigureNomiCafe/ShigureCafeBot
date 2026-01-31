@@ -15,6 +15,7 @@ TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8080")
 CAFE_API_KEY = os.getenv("CAFE_API_KEY")
 AUDIT_GROUP_ID = os.getenv("AUDIT_GROUP_ID")
+PROXY_URL = os.getenv("PROXY_URL")
 
 # Backend API Base URL
 API_BASE_URL = f"{BACKEND_URL.rstrip('/')}/api/v1"
@@ -131,7 +132,13 @@ if __name__ == '__main__':
         print("Error: TELEGRAM_BOT_TOKEN not found in environment variables.")
         exit(1)
         
-    application = ApplicationBuilder().token(TOKEN).build()
+    builder = ApplicationBuilder().token(TOKEN)
+    if PROXY_URL:
+        builder.proxy_url(PROXY_URL)
+        builder.get_updates_proxy_url(PROXY_URL)
+        print(f"Telegram Bot is using proxy: {PROXY_URL}")
+        
+    application = builder.build()
     
     start_handler = CommandHandler('start', start)
     chatid_handler = CommandHandler('chatid', get_chat_id)
