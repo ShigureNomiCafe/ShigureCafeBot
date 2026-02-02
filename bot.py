@@ -1,9 +1,9 @@
 import os
 import re
 import logging
-import requests
+import httpx
+import asyncio
 from datetime import datetime, timedelta, timezone
-# ... (rest of imports)
 from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
@@ -25,6 +25,7 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
+logger = logging.getLogger(__name__)
 
 # UUID Regex
 UUID_PATTERN = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', re.I)
@@ -68,18 +69,19 @@ async def audit(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if CAFE_API_KEY:
             headers["Cafe-API-Key"] = CAFE_API_KEY
             
-        response = requests.get(
-            f"{API_BASE_URL}/registrations/{audit_code}", 
-            headers=headers,
-            timeout=10
-        )
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(
+                f"{API_BASE_URL}/registrations/{audit_code}", 
+                headers=headers
+            )
         
         if response.status_code == 404:
-            await update.message.reply_text("抱歉，找不到该审核码。请检查输入是否正确。")
+            await update.message.reply_text("抱歉，找不到该审核码。请检查输入是否正确。" )
             return
         
         if response.status_code != 200:
-            await update.message.reply_text("后端服务请求失败，请稍后再试。")
+            logger.error(f"Backend returned status {response.status_code}: {response.text}")
+            await update.message.reply_text("后端服务请求失败，请稍后再试。" )
             return
 
         data = response.json()
@@ -89,16 +91,16 @@ async def audit(update: Update, context: ContextTypes.DEFAULT_TYPE):
         is_expired = data.get("isExpired", False)
         
         if status != "PENDING":
-            await update.message.reply_text(f"该审核码状态为 {status}，无法重新获取链接。")
+            await update.message.reply_text(f"该审核码状态为 {status}，无法重新获取链接。" )
             return
             
         if is_expired:
-            await update.message.reply_text("该审核码已过期，请联系管理员或重新发起注册。")
+            await update.message.reply_text("该审核码已过期，请联系管理员或重新发起注册。" )
             return
 
         # Generate invite link
         if not AUDIT_GROUP_ID:
-            await update.message.reply_text("未配置审核群 ID，请联系系统管理员。")
+            await update.message.reply_text("未配置审核群 ID，请联系系统管理员。" )
             return
 
         try:
@@ -120,25 +122,35 @@ async def audit(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             
         except Exception as e:
-            logging.error(f"Error creating invite link: {e}")
-            await update.message.reply_text("生成邀请链接失败，请确保机器人已加入审核群并拥有管理权限。")
+            logger.error(f"Error creating invite link: {e}", exc_info=True)
+            await update.message.reply_text("生成邀请链接失败，请确保机器人已加入审核群并拥有管理权限。" )
 
-    except requests.exceptions.RequestException as e:
-        logging.error(f"Backend request error: {e}")
-        await update.message.reply_text("连接后端服务器失败，请稍后再试。")
+    except httpx.RequestError as e:
+        logger.error(f"Backend request error: {e}", exc_info=True)
+        await update.message.reply_text("连接后端服务器失败，请稍后再试。" )
+    except Exception as e:
+        logger.error(f"Unexpected error in audit handler: {e}", exc_info=True)
+        await update.message.reply_text("发生未知错误，请稍后再试。" )
+
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Log the error and send a telegram message to notify the developer."""
+    logger.error("Exception while handling an update:", exc_info=context.error)
 
 if __name__ == '__main__':
     if not TOKEN:
-        print("Error: TELEGRAM_BOT_TOKEN not found in environment variables.")
+        logger.error("TELEGRAM_BOT_TOKEN not found in environment variables.")
         exit(1)
         
     builder = ApplicationBuilder().token(TOKEN)
     if PROXY_URL:
         builder.proxy(PROXY_URL)
         builder.get_updates_proxy(PROXY_URL)
-        print(f"Telegram Bot is using proxy: {PROXY_URL}")
+        logger.info(f"Telegram Bot is using proxy: {PROXY_URL}")
         
     application = builder.build()
+    
+    # Add error handler
+    application.add_error_handler(error_handler)
     
     start_handler = CommandHandler('start', start)
     chatid_handler = CommandHandler('chatid', get_chat_id)
@@ -148,5 +160,5 @@ if __name__ == '__main__':
     application.add_handler(chatid_handler)
     application.add_handler(audit_handler)
     
-    print("ShigureCafeBot is running...")
-    application.run_polling()
+    logger.info("ShigureCafeBot is starting...")
+    application.run_polling(allowed_updates=Update.ALL_TYPES)

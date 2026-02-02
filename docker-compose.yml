@@ -9,6 +9,7 @@ services:
       - CAFE_API_KEY=${CAFE_API_KEY}
       - AUDIT_GROUP_ID=${AUDIT_GROUP_ID}
       - PROXY_URL=${PROXY_URL:-http://cafe_mihomo:7890}
+      - PYTHONUNBUFFERED=1
     depends_on:
       cafe_mihomo:
         condition: service_healthy
