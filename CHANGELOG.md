@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.0.1] - 2026-02-02
+
+### Fixed
+- Resolved intermittent bot stops by migrating to `httpx` for asynchronous HTTP requests.
+- Enhanced logging for better troubleshooting of API interactions.
+
 ## [v1.0.0] - 2026-01-31
 
 ### Added
