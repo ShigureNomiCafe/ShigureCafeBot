@@ -26,14 +26,13 @@ def main():
         read_timeout=20,
         write_timeout=20,
         connect_timeout=20,
-        pool_timeout=20
+        pool_timeout=20,
+        proxy=PROXY_URL if PROXY_URL else None
     )
     
-    builder = ApplicationBuilder().token(TOKEN).request(request)
+    builder = ApplicationBuilder().token(TOKEN).request(request).get_updates_request(request)
     
     if PROXY_URL:
-        builder.proxy(PROXY_URL)
-        builder.get_updates_proxy(PROXY_URL)
         logger.info(f"Telegram Bot is using proxy: {PROXY_URL}")
         
     application = builder.post_init(post_init).post_stop(post_stop).build()
