@@ -1,5 +1,16 @@
 # Changelog
 
+## [v1.1.0] - 2026-02-03
+
+### Changed
+- **Modular Architecture**: Restructured the bot into a clean, modular package structure under `src/`.
+- **New Entry Point**: Migrated the main application entry point from `bot.py` to `main.py`.
+- **Refactored Handlers**: Split Telegram handlers into specialized modules (`start`, `audit`, `admin`) for better maintainability.
+- **Enhanced Configuration**: Centralized configuration management and HTTP client logic.
+
+### Fixed
+- Improved overall code organization and scalability.
+
 ## [v1.0.1] - 2026-02-02
 
 ### Fixed

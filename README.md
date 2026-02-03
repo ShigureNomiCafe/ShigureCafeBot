@@ -29,8 +29,17 @@ A Telegram bot for ShigureCafe user audit workflow.
 
 4. Run the bot:
    ```bash
-   python bot.py
+   python main.py
    ```
+
+## Project Structure
+
+- `main.py`: Entry point of the application.
+- `src/`: Source code directory.
+  - `handlers/`: Telegram update handlers.
+  - `services/`: Business logic and external service integrations (e.g., Backend API).
+  - `utils/`: Utility functions and helper classes.
+  - `config.py`: Configuration management.
 
 ## Configuration
 
