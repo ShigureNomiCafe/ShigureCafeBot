@@ -7,6 +7,7 @@ A Telegram bot for ShigureCafe user audit workflow.
 - Receive audit codes from users in private chat.
 - Verify audit codes via Backend API.
 - Generate one-time, 10-minute temporary invite links for the audit group.
+- **Asynchronous Log Reporting**: Automatically reports bot logs to the central backend for unified monitoring.
 
 ## Setup
 

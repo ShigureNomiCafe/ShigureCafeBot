@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.1.1] - 2026-02-20
+
+### Added
+- **Asynchronous Log Reporting**: Implemented a background task to automatically report bot logs to the backend every 5 seconds.
+- **Log Buffering**: Added a thread-safe `LogBufferHandler` to accumulate logs and prevent performance impact on main bot operations.
+
 ## [v1.1.0] - 2026-02-03
 
 ### Changed
