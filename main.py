@@ -1,15 +1,37 @@
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from telegram.request import HTTPXRequest
 
 from src.config import TOKEN, PROXY_URL
 from src.handlers import start_handler, audit_handler, chatid_handler
-from src.utils.logger import logger
+from src.utils.logger import logger, log_buffer_handler
 from src.utils.http_client import HttpClient
+from src.services.backend import BackendService
+
+async def report_logs(context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Task to report accumulated logs to the backend."""
+    logs = log_buffer_handler.get_and_clear_buffer()
+    if not logs:
+        return
+        
+    try:
+        await BackendService.upload_logs(logs)
+    except Exception as e:
+        # If upload fails, we might lose logs or we could put them back.
+        # For now, we just log the failure.
+        # Note: this log itself will be in the next batch (if it survives).
+        logger.error(f"Failed to report logs to backend: {e}")
 
 async def post_init(application) -> None:
     """Post initialization to setup global resources."""
     await HttpClient.get_client()
+    
+    # Schedule log reporting every 5 seconds
+    if application.job_queue:
+        application.job_queue.run_repeating(report_logs, interval=5, first=5)
+        logger.info("Log reporting task scheduled every 5 seconds.")
+    else:
+        logger.warning("Job queue is not available. Log reporting task will not be scheduled.")
 
 async def post_stop(application) -> None:
     """Post stop to cleanup global resources."""
